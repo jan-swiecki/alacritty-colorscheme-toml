@@ -23,11 +23,12 @@ def update_colors_in_config_dict(
     behaviour: OverwriteBehaviour = OverwriteBehaviour.REPLACE,
 ) -> None:
     """Update the TOML dictionary `config` with the data from `colors`."""
-    match behaviour:
-        case OverwriteBehaviour.REPLACE:
-            config["colors"] = colors["colors"]
-        case OverwriteBehaviour.UPDATE_INTERLEAVE:
-            config["colors"].update(colors["colors"])
+    if behaviour is OverwriteBehaviour.REPLACE:
+        config["colors"] = colors["colors"]
+    elif behaviour is OverwriteBehaviour.UPDATE_INTERLEAVE:
+        config["colors"].update(colors["colors"])
+    else:
+        raise ValueError(f'Invalid behaviour: {behaviour}')
 
 
 def load_toml_config_from(path: str) -> tomlkit.TOMLDocument:

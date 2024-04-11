@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import re
 
 from enum import Enum, auto
 from tap import Tap
@@ -154,7 +155,7 @@ def get_files_in_directory(path: str) -> Optional[List[str]]:
             for file in files:
                 full_path = join(root, file)
                 if file.endswith(CONF_FILE_ENDINGS) and isfile(full_path):
-                    onlyfiles.append(full_path.removeprefix(expanded_path))
+                    onlyfiles.append(re.sub(r'^' + re.escape(expanded_path), "", full_path))
         onlyfiles.sort()
         return onlyfiles
     except OSError:
@@ -233,19 +234,19 @@ def handle_args(args: TypedArgumentParser) -> None:
             colors_path = list(options)[0]
 
         # Apply the color scheme appropriate to the configuration file type.
-        match get_config_type(args.config_file):
-            case ConfigType.TOML_CONFIG:
-                # New TOML configs.
+        config_type = get_config_type(args.config_file)
+        if config_type is ConfigType.TOML_CONFIG:
+            # New TOML configs.
 
-                if colors_path.endswith(("yml", "yaml")):
-                    raise RuntimeError(
-                        f"Attempted to apply a YAML color scheme '{colors_path}'"
-                        + f" to a TOML configuration file '{args.config_file}'."
-                    )
+            if colors_path.endswith(("yml", "yaml")):
+                raise RuntimeError(
+                    f"Attempted to apply a YAML color scheme '{colors_path}'"
+                    + f" to a TOML configuration file '{args.config_file}'."
+                )
 
-                TomlManager.replace_colorscheme_at(args.config_file, colors_path)
+            TomlManager.replace_colorscheme_at(args.config_file, colors_path)
 
-            case ConfigType.YAML_CONFIG:
+        elif config_type is ConfigType.YAML_CONFIG:
                 # Old YAML configs.
 
                 if colors_path.endswith("toml"):
@@ -261,6 +262,8 @@ def handle_args(args: TypedArgumentParser) -> None:
                     args.base16_vim,
                     args.debug,
                 )
+        else:
+            raise ValueError(f'Invalid config_type: {config_type}')
     else:
         args.print_usage()
 
